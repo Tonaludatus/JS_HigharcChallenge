@@ -156,15 +156,14 @@ class GeomGraph {
         return this.geom_edges[key];
     }
 
-    /* returns reference to array of Edge objects */
+    /* returns new array of Edge objects */
     getEdges() {
-        return this.geom_edges;
-        //    let ret = [];
-        //    for (let i = 0; i < this.geom_edges.length; ++i) {
-        //        let ge = this.geom_edges[i];
-        //        ret.push(ge);
-        //    }
-        //    return ret;
+        let ret = [];
+        for (let i = 0; i < this.geom_edges.length; ++i) {
+            let ge = this.geom_edges[i];
+            ret.push(ge);
+        }
+        return ret;
     }
 
     /* returns size_t */
@@ -224,11 +223,11 @@ class Polygon {
 //std:: ostream & operator << (std:: ostream & os, const PolyGraphExport& pge);
 
 class PolyGraph {
-    constructor(/*GeomGraph&*/ geom_graph) {
+    constructor(/*GeomGraph&*/ geom_graph, /*Graph&*/ graph, polys, poly_edges) {
         this.geom_graph = geom_graph;
-        this.g = new Graph();
-        /* Array of Polygon objects */ this.polygons = [];
-        /* Array of PolyEdge objects */  this.poly_edges = [];
+        this.g = graph;
+        /* Array of Polygon objects */ this.polygons = polys;
+        /* Array of PolyEdge objects */  this.poly_edges = poly_edges;
     }
 
     /* returns Polygon&*/
@@ -269,11 +268,11 @@ function generateName(/*int*/ counter) {
 }
 
 function addPolyEdgeToBackOfPolygon(/*Polygon&*/ poly, /*PolyEdge&*/ e) {
-    poly.node.edges.push(e.edge);
+    poly.node.edges.push_back(e.edge);
 }
 
 function addPolyEdgeToFrontOfPolygon(/*Polygon&*/ poly, /*PolyEdge&*/ e) {
-    poly.node.edges.unshift(e.edge);
+    poly.node.edges.push_front(e.edge);
 }
 
 function addGeometricLeftPolyToPolyEdge(/*Polygon&*/ p, /*PolyEdge&*/ pe) {
@@ -288,10 +287,12 @@ class PolygonBuilder {
     constructor(/*GeomGraph&*/ geom_graph) {
         this.geom_graph = geom_graph;
         this.g = new Graph();
-        /* Array of Polygon objects */ polygons = [];
-        /* Array of PolyEdge objects */  poly_edges = new Array(geom_graph.numEdges()).fill(null);
+        /* Array of Polygon objects */ this.polygons = [];
+        /* Array of PolyEdge objects */  this.poly_edges =
+            new Array(geom_graph.numEdges()).fill(null);
         this.name_counter = 0;
-        /*queue<PolygonBuildStep>*/ steps = [];
+        /*queue<PolygonBuildStep>*/ this.steps = [];
+
         for (let i = 0; i < geom_graph.numEdges(); ++i) {
             this.g.addUnboundEdge();
         }
@@ -358,13 +359,13 @@ class PolygonBuilder {
     }
 
     enqueue(/*Node&*/ node, /*iterator*/ edge_to_process) {
-        this.steps.push(node, edge_to_process);
+        this.steps.push(new PolygonBuildStep(node, edge_to_process));
     }
 
     // Moves along the left spans starting from one edge.
     // Builds the right hand side polygon
     buildFromOnePolygonEdge() {
-        let start_step = steps.shift();
+        let start_step = this.steps.shift();
         let step = new PolygonBuildStep(start_step.node, start_step.edge_to_process);
         let outward_right_poly =
             this.outwardRightPolygon(step.node,
@@ -379,8 +380,8 @@ class PolygonBuilder {
         do {
             let current_node = step.node;
             let current_edge = step.edge_to_process;
-            let other_node = current_edge.otherNode(current_node);
-            let other_end_edges_it = this.geom_graph.otherEdgesItem(current_node, current_edge);
+            let other_node = current_edge.deref().otherNode(current_node);
+            let other_end_edges_it = this.geom_graph.otherEdgesItem(current_node, current_edge.deref());
 
             let ge = this.geom_graph.getGeomEdge(current_edge.deref().key);
 
@@ -407,7 +408,7 @@ class PolygonBuilder {
             let other_ge = this.geom_graph.getGeomEdge(step.edge_to_process.deref().key);
             let out_dir_current = outwardDirFrom(ge, other_geom_node);
             let out_dir_other = outwardDirFrom(other_ge, other_geom_node);
-            outward_right_poly.revolution.increaseBy(
+            trig.incrementBy(outward_right_poly.revolution,
                 trig.rotationBetweenNormalizedVectors(out_dir_current, out_dir_other));
         } while (!step.node.equals(start_step.node) || !step.edge_to_process.equals(start_step.edge_to_process));
 
@@ -416,18 +417,18 @@ class PolygonBuilder {
     }
 
     /* returns PolyGraph */
-    buildPolygons(/*GeomNode&*/ start_node) {
+    buildPolygonsFromNode(/*GeomNode&*/ start_node) {
         let it = start_node.node.edges.begin();
         this.enqueue(start_node.node, it);
-        while (steps.length > 0) {
+        while (this.steps.length > 0) {
             this.buildFromOnePolygonEdge();
         }
-        return new PolyGraph(geom_graph, g, polygons, poly_edges);
+        return new PolyGraph(this.geom_graph, this.g, this.polygons, this.poly_edges);
     }
 
     /* returns PolyGraph */
     buildPolygons() {
-        return this.buildPolygons(this.geom_graph.getGeomNode(0));
+        return this.buildPolygonsFromNode(this.geom_graph.getGeomNode(0));
     }
 }
 
