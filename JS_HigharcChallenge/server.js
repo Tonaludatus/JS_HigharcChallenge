@@ -78,6 +78,9 @@ app.get('/Task2.html', function (req, res) {
 	res.sendFile(__dirname + '/html/Task2.html');
 })
 
+app.get('/Task4.html', function (req, res) {
+	res.sendFile(__dirname + '/html/Task4.html');
+})
 
 app.post('/task1_data', function (req, res) {
 	let ret = { error: "Something went wrong" };
@@ -121,6 +124,58 @@ app.post('/task2_data', function (req, res) {
 		ret = ret.filter((val, index, arr) => {
 			return arr.indexOf(val) == index;
 		});
+	} catch (exc) {
+		ret.error = exc;
+	}
+	res.json(ret);
+})
+
+app.post('/task4_data', function (req, res) {
+	let ret = { error: "Something went wrong" };
+	try {
+		let json = JSON.parse(req.body.poly_graph);
+		let face = req.body.face;
+		let pg = graph.importPolyGraph(json);
+		ret = []
+		let queue_this = []
+		let queue_next = []
+		let visited_polys = Array(pg.polygons.length).fill(false)
+		for (let i = 0; i < pg.polygons.length; ++i) {
+			let p = pg.polygons[i];
+			if (p.name === face && graph.isInteriorPoly(p)) {
+				queue_this.push(p)
+			}
+		}
+		while (queue_this.length > 0) {
+			// Dedupe
+			queue_this = queue_this.filter((val, index, arr) => {
+				return arr.indexOf(val) == index;
+			});
+			ret.push(queue_this.map((p) => { return p.name; }));
+			// Breadth first step
+			while (queue_this.length > 0) {
+				let p = queue_this.shift();
+				visited_polys[p.node.key] = true;
+				for (let it = p.node.edges.begin();
+					it.not_equals(p.node.edges.end());
+					it.increment()) {
+					let e = it.deref();
+					let poly = null;
+					if (p.node.equals(e.start)) {
+						poly = pg.getPolygon(e.end.key);
+					} else {
+						poly = pg.getPolygon(e.start.key);
+					}
+					if (!visited_polys[poly.node.key] &&
+						graph.isInteriorPoly(poly)) {
+						queue_next.push(poly);
+					}
+				}
+			}
+			queue_this = queue_next;
+			queue_next = [];
+		}
+		
 	} catch (exc) {
 		ret.error = exc;
 	}

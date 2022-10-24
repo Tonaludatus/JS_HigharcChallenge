@@ -61,7 +61,6 @@
 
             // Put the results in a div
             posting.done(function (data) {
-                //                var content = $(data).find("#content");
                 var result = JSON.stringify(data);
                 $("#result").empty().append(result);
                 var context = canvas.getContext('2d');
