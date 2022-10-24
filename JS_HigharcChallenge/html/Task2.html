@@ -18,12 +18,13 @@
         or string.
     </p>
     <p>
-        Example inputs:
-        {"vertices":[[-38.2,0],[29.87,45.12],[60,15.8],[11.3,-23.09],[0,5],[-12,-49.784],[27,-35.55]],"edges":[[0,1],[1,2],[2,3],[3,0],[4,0],[4,1],[4,2],[4,3],[3,5],[6,3],[6,5]]} </br>
-        {"vertices": [[-38.2, 0],[29.87, 45.12],[60, 15.8],[11.3, -23.09],[0, 5],[-12, -49.784],[27, -35.55]],"edges": [[0, 1], [1, 2], [2, 3],[3, 0], [4, 0], [4, 1],[4, 2], [4, 3]]} </br>
+        Example inputs: </br>
+        {"vertices":[[-38.2,0],[29.87,45.12],[60,15.8],[11.3,-23.09],[0,5],[-12,-49.784],[27,-35.55]],"edges":[[0,1],[1,2],[2,3],[3,0],[4,0],[4,1],[4,2],[4,3],[3,5],[6,3],[6,5]],"faces":[{"name":"A","is_interior_poly":true,"edges":[-4,-8,5]},{"name":"B","is_interior_poly":true,"edges":[6,-1,-5]},{"name":"C","is_interior_poly":true,"edges":[-3,-7,8]},{"name":"D","is_interior_poly":false,"edges":[1,2,3,-10,11,-9,4]},{"name":"E","is_interior_poly":true,"edges":[7,-2,-6]},{"name":"F","is_interior_poly":true,"edges":[-11,10,9]}]} </br>
     </p>
     <form action="/task2_data" id="task2_json_entry">
+        <label for="poly_graph">Polygon-Geometry dual graph JSON:</label>
         <input type="text" name="poly_graph">
+        <label for="poly_graph">Face:</label>
         <input type="text" name="face">
         <input type="submit" value="Send">
     </form>
@@ -62,7 +63,6 @@
 
             // Put the results in a div
             posting.done(function (data) {
-                //                var content = $(data).find("#content");
                 var result = JSON.stringify(data);
                 $("#result").empty().append(result);
                 var context = canvas.getContext('2d');
@@ -101,7 +101,7 @@
                         com[1] += toCanvasY(common_vertex[1]);
                     }
                     context.closePath();
-                    if (result.includes(p.name)) {
+                    if (data.includes(p.name)) {
                         context.fillStyle = colors[color_idx++ % colors.length];
                         context.fill();
                     } else {

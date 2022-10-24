@@ -86,7 +86,7 @@ app.post('/task1_data', function (req, res) {
 		let pg = graph.importGeomGraphAndBuildPolyGraph(json);
 		ret = graph.exportPolyGraph(pg);
 	} catch (exc) {
-		ret.error = exc;
+		ret.error = exc.toString();
 	}
 	res.json(ret);
 })
