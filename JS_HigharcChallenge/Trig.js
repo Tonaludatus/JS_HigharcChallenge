@@ -125,7 +125,7 @@ function innerRevolutionOfNGon(/*unsigned int*/ n) {
 
 /* returns Rotation */
 function outerRevolutionOfNGon(/*unsigned int*/ n) {
-	return Rotation(
+	return new Rotation(
 		0.0,
 			n % 2 == 0 ? 1.0 : -1.0,
 			(n + 1) / 2

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Higharc challenge Task 1</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+</head>
+<body>
+    <p>
+        Algorithm 2: Write an algorithm that processes the output of Algorithm 1 in order to find
+        the neighboring faces of any face. That is, faces that share an edge with the query face.
+        It should take the output of <a href="Task1.html">Algorithm 1</a> as input, unique identifier
+        for the face and output an array of face identifiers. The face identifiers might be an integer
+        or string.
+    </p>
+    <p>
+        Example inputs:
+        {"vertices":[[-38.2,0],[29.87,45.12],[60,15.8],[11.3,-23.09],[0,5],[-12,-49.784],[27,-35.55]],"edges":[[0,1],[1,2],[2,3],[3,0],[4,0],[4,1],[4,2],[4,3],[3,5],[6,3],[6,5]]} </br>
+        {"vertices": [[-38.2, 0],[29.87, 45.12],[60, 15.8],[11.3, -23.09],[0, 5],[-12, -49.784],[27, -35.55]],"edges": [[0, 1], [1, 2], [2, 3],[3, 0], [4, 0], [4, 1],[4, 2], [4, 3]]} </br>
+    </p>
+    <form action="/task2_data" id="task2_json_entry">
+        <input type="text" name="poly_graph">
+        <input type="text" name="face">
+        <input type="submit" value="Send">
+    </form>
+    <div id="result"></div>
+    <canvas id="poly_canvas" width="400" height="400"></canvas>
+
+    <script>
+        // Attach a submit handler to the form
+        $("#task2_json_entry").submit(function (event) {
+
+            // Stop form from submitting normally
+            event.preventDefault();
+
+            // Get some values from elements on the page:
+            var $form = $(this),
+                poly_graph_json = $form.find("input[name='poly_graph']").val(),
+                face = $form.find("input[name='face']").val(),
+                url = $form.attr("action");
+
+            // Send the data using post
+            var posting = $.post(url, { poly_graph: poly_graph_json, face:face });
+
+            var scale = 1.0;
+            var minx = 1000000;
+            var maxx = -1000000;
+            var miny = 1000000;
+            var maxy = -1000000;
+            var canvas = $("#poly_canvas").get(0);
+
+            function toCanvasX(x) {
+                return (canvas.scrollWidth) * (x - minx) / scale;
+            }
+            function toCanvasY(y) {
+                return (canvas.scrollHeight) * (y - miny) / scale;
+            }
+
+            // Put the results in a div
+            posting.done(function (data) {
+                //                var content = $(data).find("#content");
+                var result = JSON.stringify(data);
+                $("#result").empty().append(result);
+                var context = canvas.getContext('2d');
+                context.clearRect(0, 0, canvas.scrollWidth, canvas.scrollHeight);
+                const colors = ['red', 'blue', 'green', 'yellow', 'purple',
+                    'black', 'orange', 'teal', 'grey', 'tomato', 'lime'];
+
+                let poly_graph = JSON.parse(poly_graph_json);
+                for (let vidx = 0; vidx < poly_graph.vertices.length; ++vidx) {
+                    let v = poly_graph.vertices[vidx];
+                    if (v[0] < minx) minx = v[0];
+                    if (v[1] < miny) miny = v[1];
+                    if (v[0] > maxx) maxx = v[0];
+                    if (v[1] > maxy) maxy = v[1];
+                }
+                scale = Math.max(maxx - minx, maxy - miny);
+                var color_idx = 0;
+                for (let pidx = 0; pidx < poly_graph.faces.length; ++pidx) {
+                    var com = [0.0, 0.0]; // center of mass
+                    let p = poly_graph.faces[pidx];
+                    if (!p.is_interior_poly) continue;
+                    context.beginPath();
+                    for (let eidx = 0; eidx < p.edges.length; ++eidx) {
+                        let e = poly_graph.edges[Math.abs(p.edges[eidx])-1];
+                        let enext = poly_graph.edges[Math.abs(p.edges[(eidx + 1) % p.edges.length])-1];
+                        let common_vertex_idx = e.filter((a) => { return enext.indexOf(a) !== -1; });
+                        let common_vertex = poly_graph.vertices[common_vertex_idx[0]];
+                        if (eidx == 0) {
+                            context.moveTo(toCanvasX(common_vertex[0]),
+                                toCanvasY(common_vertex[1]));
+                        } else {
+                            context.lineTo(toCanvasX(common_vertex[0]),
+                                toCanvasY(common_vertex[1]));
+                        }
+                        com[0] += toCanvasX(common_vertex[0]);
+                        com[1] += toCanvasY(common_vertex[1]);
+                    }
+                    context.closePath();
+                    if (result.includes(p.name)) {
+                        context.fillStyle = colors[color_idx++ % colors.length];
+                        context.fill();
+                    } else {
+                        context.fillStyle = 'black';
+                        context.stroke();
+                    }
+                    com[0] /= p.edges.length;
+                    com[1] /= p.edges.length;
+                    context.font = '12px serif';
+                    context.fillStyle = 'black';
+                    context.fillText(p.name, com[0], com[1]);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

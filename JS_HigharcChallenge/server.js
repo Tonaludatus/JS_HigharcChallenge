@@ -74,12 +74,53 @@ app.get('/Task1.html', function (req, res) {
 	res.sendFile(__dirname + '/html/Task1.html');
 })
 
+app.get('/Task2.html', function (req, res) {
+	res.sendFile(__dirname + '/html/Task2.html');
+})
+
+
 app.post('/task1_data', function (req, res) {
 	let ret = { error: "Something went wrong" };
 	try {
 		let json = JSON.parse(req.body.geom_graph);
 		let pg = graph.importGeomGraphAndBuildPolyGraph(json);
 		ret = graph.exportPolyGraph(pg);
+	} catch (exc) {
+		ret.error = exc;
+	}
+	res.json(ret);
+})
+
+app.post('/task2_data', function (req, res) {
+	let ret = { error: "Something went wrong" };
+	try {
+		let json = JSON.parse(req.body.poly_graph);
+		let face = req.body.face;
+		let pg = graph.importPolyGraph(json);
+		ret = []
+		for (let i = 0; i < pg.polygons.length; ++i) {
+			let p = pg.polygons[i];
+			if (p.name === face) {
+				for (let it = p.node.edges.begin();
+					it.not_equals(p.node.edges.end());
+					it.increment()) {
+					let e = it.deref();
+					let poly = null;
+					if (p.node.equals(e.start)) {
+						poly = pg.getPolygon(e.end.key);
+					} else {
+						poly = pg.getPolygon(e.start.key);
+					}
+					if (graph.isInteriorPoly(poly)) {
+						ret.push(poly.name);
+					}
+                }
+            }
+		}
+		// Dedupe
+		ret = ret.filter((val, index, arr) => {
+			return arr.indexOf(val) == index;
+		});
 	} catch (exc) {
 		ret.error = exc;
 	}

@@ -466,13 +466,14 @@ function importPolyGraph(/*PolyGraphExport&*/ pgx) {
         let n = pg.g.addNode();
         let node = n.second;
         let name = p.name;
-        let poly = pg.polygons.push(new Polygon(node, name));
+        let poly = new Polygon(node, name);
+        pg.polygons.push(poly);
         poly.revolution = p.is_interior_poly
-            ? trig.innerRevolutionOfNGon(p.edges.size())
-            : trig.outerRevolutionOfNGon(p.edges.size());
+            ? trig.innerRevolutionOfNGon(p.edges.length)
+            : trig.outerRevolutionOfNGon(p.edges.length);
         for (let j = 0; j < p.edges.length; ++j) {
             let signed_edge_idx = p.edges[j];
-            let edge_idx = abs(signed_edge_idx) - 1;
+            let edge_idx = Math.abs(signed_edge_idx) - 1;
             let e = pg.g.getEdge(edge_idx);
             node.edges.push_back(e);
             if (signed_edge_idx > 0) {
@@ -484,6 +485,13 @@ function importPolyGraph(/*PolyGraphExport&*/ pgx) {
         }
     }
     return pg;
+}
+
+/* returns bool */
+function isInteriorPoly(/*Polygon&*/p) {
+    return trig.less_than(p.revolution,
+        trig.plus(trig.innerRevolutionOfNGon(p.node.edges.size()),
+            new trig.Rotation(0.0, - 1.0, 0) /* accounting for numeric errors */));
 }
 
 /* returns PolyGraphExport */
@@ -514,9 +522,7 @@ function exportPolyGraph(/*const PolyGraph&*/ poly_graph) {
         }
         pgx.faces.push(new PolygonExport(
             p.name,
-            trig.less_than(p.revolution,
-                trig.plus(trig.innerRevolutionOfNGon(p.node.edges.size()),
-                    new trig.Rotation(0.0, - 1.0, 0) /* accounting for numeric errors */)),
+            isInteriorPoly(p),
             edges
         ));
     }
@@ -538,5 +544,6 @@ module.exports = {
     PolygonBuilder,
     importGeomGraphAndBuildPolyGraph,
     importPolyGraph,
+    isInteriorPoly,
     exportPolyGraph
 };
