@@ -33,6 +33,9 @@
   <ItemGroup>
     <Content Include="CircularList.js" />
     <Content Include="Graph.js" />
+    <Content Include="html\Task1.html">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="server.js" />
     <Content Include="package.json" />
     <Content Include="README.md" />
@@ -56,6 +59,7 @@
     <Content Include="Vector.js" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="html\" />
     <Folder Include="tests\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />

@@ -245,84 +245,6 @@ class PolyGraph {
     }
 }
 
-/* returns PolyGraph */
-function importPolyGraph(/*PolyGraphExport&*/ pgx) {
-    let g = new Graph();
-    let gg = new GeomGraph();
-    let pg = new PolyGraph(gg, g, [], []);
-    for (let i = 0; i < pgx.vertices.length; ++i) {
-        let p = pgx.vertices[i];
-        gg.addGeomNode(new vector.Point(p[0], p[1]));
-    }
-    for (let i = 0; i < pgx.edges.length; ++i) {
-        let e = pgx.edges[i];
-        let ge = gg.addGeomEdge(gg.getGeomNode(e[0]),
-                                gg.getGeomNode(e[1]));
-        let ue = pg.g.addUnboundEdge();
-        pg.poly_edges.push(new PolyEdge(ue.second, ge.second));
-    }
-    for (let i = 0; i < pgx.faces.length; ++i) {
-        let p = pgx.faces[i];
-        let n = pg.g.addNode();
-        let node = n.second;
-        let name = p.name;
-        let poly = pg.polygons.push(new Polygon(node, name));
-        poly.revolution = p.is_interior_poly
-            ? trig.innerRevolutionOfNGon(p.edges.size())
-            : trig.outerRevolutionOfNGon(p.edges.size());
-        for (let j = 0; j < p.edges.length; ++j) {
-            let signed_edge_idx = p.edges[j];
-            let edge_idx = abs(signed_edge_idx) - 1;
-            let e = pg.g.getEdge(edge_idx);
-            node.edges.push_back(e);
-            if (signed_edge_idx > 0) {
-                e.start = node;
-            }
-            else {
-                e.end = node;
-            }
-        }
-    }
-    return pg;
-}
-
-/* returns PolyGraphExport */
-function exportPolyGraph(/*const PolyGraph&*/ poly_graph) {
-    let pgx = new PolyGraphExport();
-    for (let i = 0; i < poly_graph.geom_graph.numNodes(); ++i) {
-        let geom_node = poly_graph.geom_graph.getGeomNode(i);
-        pgx.vertices.push([geom_node.pos.x, geom_node.pos.y]);
-    }
-    for (let i = 0; i < poly_graph.g.edges.length; ++i) {
-        let geom_edge = poly_graph.geom_graph.getGeomEdge(i);
-        pgx.edges.push([geom_edge.edge.start.key,
-        geom_edge.edge.end.key]);
-    }
-    for (let i = 0; i < poly_graph.polygons.length; ++i) {
-        let p = poly_graph.polygons[i];
-        let edges = [];
-        for (let it = p.node.edges.begin();
-            it.not_equals(p.node.edges.end()); it.increment()) {
-            let e = it.deref();
-            let idx = e.key + 1;
-            if (e.start.equals(p.node)) {
-                edges.push(idx);
-            }
-            else {
-                edges.push(-idx);
-            }
-        }
-        pgx.faces.push(new PolygonExport(
-            p.name,
-            trig.less_than(p.revolution,
-                trig.plus(trig.innerRevolutionOfNGon(p.node.edges.size()),
-                    new trig.Rotation(0.0, - 1.0, 0) /* accounting for numeric errors */)),
-            edges
-        ));
-    }
-    return pgx;
-}
-
 class PolygonBuildStep {
     constructor(/*Node&*/ n, /*iterator*/ e) {
         this.node = n;
@@ -505,6 +427,103 @@ class PolygonBuilder {
     }
 }
 
+/* returns PolyGraph */
+function importGeomGraphAndBuildPolyGraph(/*GeomGraphExport&*/ ggx) {
+    let gg = new GeomGraph();
+    for (let i = 0; i < ggx.vertices.length; ++i) {
+        let p = ggx.vertices[i];
+        gg.addGeomNode(new vector.Point(p[0], p[1]));
+    }
+    for (let i = 0; i < ggx.edges.length; ++i) {
+        let e = ggx.edges[i];
+        gg.addGeomEdge(gg.getGeomNode(e[0]),
+            gg.getGeomNode(e[1]));
+    }
+    let pb = new PolygonBuilder(gg);
+    let pg = pb.buildPolygons();
+    return pg;
+}
+
+
+/* returns PolyGraph */
+function importPolyGraph(/*PolyGraphExport&*/ pgx) {
+    let g = new Graph();
+    let gg = new GeomGraph();
+    let pg = new PolyGraph(gg, g, [], []);
+    for (let i = 0; i < pgx.vertices.length; ++i) {
+        let p = pgx.vertices[i];
+        gg.addGeomNode(new vector.Point(p[0], p[1]));
+    }
+    for (let i = 0; i < pgx.edges.length; ++i) {
+        let e = pgx.edges[i];
+        let ge = gg.addGeomEdge(gg.getGeomNode(e[0]),
+            gg.getGeomNode(e[1]));
+        let ue = pg.g.addUnboundEdge();
+        pg.poly_edges.push(new PolyEdge(ue.second, ge.second));
+    }
+    for (let i = 0; i < pgx.faces.length; ++i) {
+        let p = pgx.faces[i];
+        let n = pg.g.addNode();
+        let node = n.second;
+        let name = p.name;
+        let poly = pg.polygons.push(new Polygon(node, name));
+        poly.revolution = p.is_interior_poly
+            ? trig.innerRevolutionOfNGon(p.edges.size())
+            : trig.outerRevolutionOfNGon(p.edges.size());
+        for (let j = 0; j < p.edges.length; ++j) {
+            let signed_edge_idx = p.edges[j];
+            let edge_idx = abs(signed_edge_idx) - 1;
+            let e = pg.g.getEdge(edge_idx);
+            node.edges.push_back(e);
+            if (signed_edge_idx > 0) {
+                e.start = node;
+            }
+            else {
+                e.end = node;
+            }
+        }
+    }
+    return pg;
+}
+
+/* returns PolyGraphExport */
+function exportPolyGraph(/*const PolyGraph&*/ poly_graph) {
+    let pgx = new PolyGraphExport();
+    for (let i = 0; i < poly_graph.geom_graph.numNodes(); ++i) {
+        let geom_node = poly_graph.geom_graph.getGeomNode(i);
+        pgx.vertices.push([geom_node.pos.x, geom_node.pos.y]);
+    }
+    for (let i = 0; i < poly_graph.g.edges.length; ++i) {
+        let geom_edge = poly_graph.geom_graph.getGeomEdge(i);
+        pgx.edges.push([geom_edge.edge.start.key,
+        geom_edge.edge.end.key]);
+    }
+    for (let i = 0; i < poly_graph.polygons.length; ++i) {
+        let p = poly_graph.polygons[i];
+        let edges = [];
+        for (let it = p.node.edges.begin();
+            it.not_equals(p.node.edges.end()); it.increment()) {
+            let e = it.deref();
+            let idx = e.key + 1;
+            if (e.start.equals(p.node)) {
+                edges.push(idx);
+            }
+            else {
+                edges.push(-idx);
+            }
+        }
+        pgx.faces.push(new PolygonExport(
+            p.name,
+            trig.less_than(p.revolution,
+                trig.plus(trig.innerRevolutionOfNGon(p.node.edges.size()),
+                    new trig.Rotation(0.0, - 1.0, 0) /* accounting for numeric errors */)),
+            edges
+        ));
+    }
+    return pgx;
+}
+
+
 module.exports = {
     outwardDirFrom,
     Node,
@@ -517,6 +536,7 @@ module.exports = {
     Polygon,
     PolyGraph,
     PolygonBuilder,
+    importGeomGraphAndBuildPolyGraph,
     importPolyGraph,
     exportPolyGraph
 };

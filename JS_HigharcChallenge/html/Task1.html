@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Higharc challenge Task 1</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+</head>
+<body>
+    <p>
+        This data structure is provided in the form of a collection of vertex positions and an edge set.
+        Here’s an example that defines a 2x2 rectangle with a diagonal interior edge:
+        {
+        "vertices": [[0, 0], [2, 0], [2, 2], [0, 2]],
+        "edges": [[0, 1], [1, 2], [0, 2], [0, 3], [2, 3]]
+        }
+    </p>
+    <p>
+        Algorithm 1: Write an algorithm that finds all of the interior faces (polygons) of such a
+        data structure.
+    </p>
+    <form action="/task1_data" id="geom_graph_json_entry">
+        <input type="text" name="geom_graph">
+        <input type="submit" value="Send">
+    </form>
+    <div id="result"></div>
+    <canvas id="poly_canvas" width="400" height="400"></canvas>
+
+    <script>
+        // Attach a submit handler to the form
+        $("#geom_graph_json_entry").submit(function (event) {
+
+            // Stop form from submitting normally
+            event.preventDefault();
+
+            // Get some values from elements on the page:
+            var $form = $(this),
+                term = $form.find("input[name='geom_graph']").val(),
+                url = $form.attr("action");
+
+            // Send the data using post
+            var posting = $.post(url, { geom_graph: term });
+
+            var scale = 1.0;
+            var minx = 1000000;
+            var maxx = -1000000;
+            var miny = 1000000;
+            var maxy = -1000000;
+            var canvas = $("#poly_canvas").get(0);
+
+            function toCanvasX(x) {
+                return (canvas.scrollWidth) * (x - minx) / scale;
+            }
+            function toCanvasY(y) {
+                return (canvas.scrollHeight) * (y - miny) / scale;
+            }
+
+            // Put the results in a div
+            posting.done(function (data) {
+                //                var content = $(data).find("#content");
+                var result = JSON.stringify(data);
+                $("#result").empty().append(result);
+                var context = canvas.getContext('2d');
+                context.clearRect(0, 0, canvas.scrollWidth, canvas.scrollHeight);
+                const colors = ['red', 'blue', 'green', 'yellow', 'purple',
+                    'black', 'orange', 'teal', 'grey', 'tomato', 'lime'];
+
+                for (let vidx = 0; vidx < data.vertices.length; ++vidx) {
+                    let v = data.vertices[vidx];
+                    if (v[0] < minx) minx = v[0];
+                    if (v[1] < miny) miny = v[1];
+                    if (v[0] > maxx) maxx = v[0];
+                    if (v[1] > maxy) maxy = v[1];
+                }
+                scale = Math.max(maxx - minx, maxy - miny);
+                var color_idx = 0;
+                for (let pidx = 0; pidx < data.faces.length; ++pidx) {
+                    var com = [0.0, 0.0]; // center of mass
+                    let p = data.faces[pidx];
+                    if (!p.is_interior_poly) continue;
+                    context.beginPath();
+                    for (let eidx = 0; eidx < p.edges.length; ++eidx) {
+                        let e = data.edges[Math.abs(p.edges[eidx])-1];
+                        let enext = data.edges[Math.abs(p.edges[(eidx + 1) % p.edges.length])-1];
+                        let common_vertex_idx = e.filter((a) => { return enext.indexOf(a) !== -1; });
+                        let common_vertex = data.vertices[common_vertex_idx[0]];
+                        if (eidx == 0) {
+                            context.moveTo(toCanvasX(common_vertex[0]),
+                                toCanvasY(common_vertex[1]));
+                        } else {
+                            context.lineTo(toCanvasX(common_vertex[0]),
+                                toCanvasY(common_vertex[1]));
+                        }
+                        com[0] += toCanvasX(common_vertex[0]);
+                        com[1] += toCanvasY(common_vertex[1]);
+                    }
+                    context.closePath();
+                    context.fillStyle = colors[color_idx++ % colors.length];
+                    context.fill();
+                    com[0] /= p.edges.length;
+                    com[1] /= p.edges.length;
+                    context.font = '12px serif';
+                    context.fillStyle = 'black';
+                    context.fillText(p.name, com[0], com[1]);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
