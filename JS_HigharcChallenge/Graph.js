@@ -201,26 +201,30 @@ class Polygon {
     }
 };
 
-//struct PolyGraphExport {
-//    struct PolygonExport {
-//        std::string name;
-//        bool is_interior_poly;
-//        std:: vector < int > edges;
-//    };
-//    std:: vector < std:: pair < double, double >> geom_nodes;
-//    // indexes into geom_nodes
-//    std:: vector < std:: pair < size_t, size_t >> geom_edges;
-//    // signed indexes into geom_edges. Positive sign means the
-//    // polygon is on the left geometric side of the edge.
-//    // Negative sign means it's on the right geometric side.
-//    // For indexing into geom_edges take the absolut value of
-//    // the index and subtract one.
-//    // The order of the edges follows counterclockwise revolution
-//    // around the polygon.
-//    std:: vector < PolygonExport > polygons;
-//};
+class PolygonExport {
+    constructor(/*string*/ nm, /*bool*/ is_interior, /*array of edge keys*/ edge_keys) {
+        this.name = nm;
+        this.is_interior_poly = is_interior;
+        this.edges = edge_keys;
+    }
+};
 
-//std:: ostream & operator << (std:: ostream & os, const PolyGraphExport& pge);
+class PolyGraphExport {
+    constructor() {
+        /* array of point coordinates as pairs*/ this.vertices = [];
+        /* array of pairs of indices into geom_nodes */
+        this.edges = [];
+        // Signed indexes into geom_edges. Positive sign means the
+        // polygon is on the left geometric side of the edge.
+        // Negative sign means it's on the right geometric side.
+        // For indexing into geom_edges take the absolut value of
+        // the index and subtract one.
+        // The order of the edges follows counterclockwise revolution
+        // around the polygon.
+        // The items in the array are of type PolygonExport
+        this.faces= [];
+    }
+};
 
 class PolyGraph {
     constructor(/*GeomGraph&*/ geom_graph, /*Graph&*/ graph, polys, poly_edges) {
@@ -241,14 +245,83 @@ class PolyGraph {
     }
 }
 
-//struct DualGraph {
-//    GeomGraph geom_graph;
-//    PolyGraph poly_graph{ geom_graph };
-//};
+/* returns PolyGraph */
+function importPolyGraph(/*PolyGraphExport&*/ pgx) {
+    let g = new Graph();
+    let gg = new GeomGraph();
+    let pg = new PolyGraph(gg, g, [], []);
+    for (let i = 0; i < pgx.vertices.length; ++i) {
+        let p = pgx.vertices[i];
+        gg.addGeomNode(new vector.Point(p[0], p[1]));
+    }
+    for (let i = 0; i < pgx.edges.length; ++i) {
+        let e = pgx.edges[i];
+        let ge = gg.addGeomEdge(gg.getGeomNode(e[0]),
+                                gg.getGeomNode(e[1]));
+        let ue = pg.g.addUnboundEdge();
+        pg.poly_edges.push(new PolyEdge(ue.second, ge.second));
+    }
+    for (let i = 0; i < pgx.faces.length; ++i) {
+        let p = pgx.faces[i];
+        let n = pg.g.addNode();
+        let node = n.second;
+        let name = p.name;
+        let poly = pg.polygons.push(new Polygon(node, name));
+        poly.revolution = p.is_interior_poly
+            ? trig.innerRevolutionOfNGon(p.edges.size())
+            : trig.outerRevolutionOfNGon(p.edges.size());
+        for (let j = 0; j < p.edges.length; ++j) {
+            let signed_edge_idx = p.edges[j];
+            let edge_idx = abs(signed_edge_idx) - 1;
+            let e = pg.g.getEdge(edge_idx);
+            node.edges.push_back(e);
+            if (signed_edge_idx > 0) {
+                e.start = node;
+            }
+            else {
+                e.end = node;
+            }
+        }
+    }
+    return pg;
+}
 
-//DualGraph importDualGraph(const PolyGraphExport& pgx);
-
-//PolyGraphExport exportPolyGraph(const PolyGraph& poly_graph);
+/* returns PolyGraphExport */
+function exportPolyGraph(/*const PolyGraph&*/ poly_graph) {
+    let pgx = new PolyGraphExport();
+    for (let i = 0; i < poly_graph.geom_graph.numNodes(); ++i) {
+        let geom_node = poly_graph.geom_graph.getGeomNode(i);
+        pgx.vertices.push([geom_node.pos.x, geom_node.pos.y]);
+    }
+    for (let i = 0; i < poly_graph.g.edges.length; ++i) {
+        let geom_edge = poly_graph.geom_graph.getGeomEdge(i);
+        pgx.edges.push([geom_edge.edge.start.key,
+        geom_edge.edge.end.key]);
+    }
+    for (let i = 0; i < poly_graph.polygons.length; ++i) {
+        let p = poly_graph.polygons[i];
+        let edges = [];
+        for (let it = p.node.edges.begin();
+            it.not_equals(p.node.edges.end()); it.increment()) {
+            let e = it.deref();
+            let idx = e.key + 1;
+            if (e.start.equals(p.node)) {
+                edges.push(idx);
+            }
+            else {
+                edges.push(-idx);
+            }
+        }
+        pgx.faces.push(new PolygonExport(
+            p.name,
+            trig.less_than(p.revolution,
+                trig.plus(trig.innerRevolutionOfNGon(p.node.edges.size()),
+                    new trig.Rotation(0.0, - 1.0, 0) /* accounting for numeric errors */)),
+            edges
+        ));
+    }
+    return pgx;
+}
 
 class PolygonBuildStep {
     constructor(/*Node&*/ n, /*iterator*/ e) {
@@ -262,7 +335,7 @@ function generateName(/*int*/ counter) {
     let ret = '';
     do {
         ret += String.fromCharCode(65 + (counter % 26));
-        counter /= 26;
+        counter = Math.floor(counter / 26);
     } while (counter > 0);
     return ret;
 }
@@ -443,5 +516,7 @@ module.exports = {
     PolyEdge,
     Polygon,
     PolyGraph,
-    PolygonBuilder
+    PolygonBuilder,
+    importPolyGraph,
+    exportPolyGraph
 };

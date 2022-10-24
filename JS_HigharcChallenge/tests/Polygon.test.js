@@ -1,6 +1,5 @@
 const vector = require("../Vector")
 const graph = require("../Graph")
-let Vector = vector.Vector;
 let Point = vector.Point;
 
 class PolygonTest {
