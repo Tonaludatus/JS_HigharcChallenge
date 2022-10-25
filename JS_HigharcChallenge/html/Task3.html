@@ -21,7 +21,7 @@
         the polygon is an interior polygon (there <b>is ALWAYS one exterior polygon</b>, also in the array),
         and an array for edges with the following semantics: if the edge of <b>one-based index</b> 'i' in the
         top level "edges" array aligns with the clockwise revolution around the polygon it is an edge of,
-        then the sign will be positive; otherwise it will be negative.
+        then it will be added as 'i' to the polygon's edge array; otherwise it will be added as '-i'.
     </p>
     <p>
         Example inputs: <br />

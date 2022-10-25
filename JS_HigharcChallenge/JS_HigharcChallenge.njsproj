@@ -39,6 +39,9 @@
     <Content Include="html\Task1.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="Web.config" />
+    <None Include="Web.Debug.config" />
+    <None Include="Properties\PublishProfiles\JSHigharcChallenge - Web Deploy.pubxml" />
     <Content Include="server.js" />
     <Content Include="package.json" />
     <Content Include="README.md" />
@@ -63,6 +66,8 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="html\" />
+    <Folder Include="Properties\" />
+    <Folder Include="Properties\PublishProfiles\" />
     <Folder Include="tests\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
