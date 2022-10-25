@@ -51,11 +51,57 @@ function kite_with_ear(/*HighArcPolygonTest*/hapt) {
 	hapt.gg.addGeomEdge(hapt.n4, hapt.n6);
 	hapt.gg.addGeomEdge(hapt.n7, hapt.n4);
 	hapt.gg.addGeomEdge(hapt.n7, hapt.n6);
-	let pb = new graph.PolygonBuilder(hapt.gg);
-	let pg = pb.buildPolygons();
+	//let pb = new graph.PolygonBuilder(hapt.gg);
+	//let pg = pb.buildPolygons();
+	let pg = new graph.PolyGraph(hapt.gg, new graph.Graph(), [], []);
 	return JSON.stringify(graph.exportPolyGraph(pg));
 }
 
+function square_lattice(nx, ny) {
+	let gg = new graph.GeomGraph();
+	for (let j = 0; j < ny; ++j) {
+		for (let i = 0; i < nx; ++i) {
+			let n = gg.addGeomNode(new Point(i, j));
+			if (i > 0) {
+				// Link to previous
+				gg.addGeomEdge(n.second, gg.getGeomNode(n.first - 1));
+			}
+			if (j > 0) {
+				// Link to one row above
+				gg.addGeomEdge(n.second, gg.getGeomNode(n.first - nx));
+            }
+		}
+	}
+	//let pb = new graph.PolygonBuilder(gg);
+	//let pg = pb.buildPolygons();
+	let pg = new graph.PolyGraph(gg, new graph.Graph(), [], []);
+	return JSON.stringify(graph.exportPolyGraph(pg));
+}
+
+function triangle_lattice(nx, ny) {
+	let gg = new graph.GeomGraph();
+	for (let j = 0; j < ny; ++j) {
+		for (let i = 0; i < nx; ++i) {
+			let n = gg.addGeomNode(new Point(i, j));
+			if (i > 0) {
+				// Link to previous
+				gg.addGeomEdge(n.second, gg.getGeomNode(n.first - 1));
+			}
+			if (j > 0) {
+				// Link to one row above
+				gg.addGeomEdge(n.second, gg.getGeomNode(n.first - nx));
+			}
+			if (j > 0 && i > 0) {
+				// Link diagonally to one row above
+				gg.addGeomEdge(n.second, gg.getGeomNode(n.first - nx - 1));
+			}
+		}
+	}
+	//let pb = new graph.PolygonBuilder(gg);
+	//let pg = pb.buildPolygons();
+	let pg = new graph.PolyGraph(gg, new graph.Graph(), [], []);
+	return JSON.stringify(graph.exportPolyGraph(pg));
+}
 
 var app = express()
 //app.use(express.static(__dirname));
@@ -64,10 +110,29 @@ app.use(bodyparser.urlencoded({ extended: true }))
 
 app.listen(port)
 
-app.get('/', function (req, res) {
+app.get('/kite_with_ear', function (req, res) {
 	res.writeHead(200, { 'Content-Type': 'text/plain' });
 	let hapt = new HighArcPolygonTest();
 	res.end(kite_with_ear(hapt));
+})
+
+app.get('/kite', function (req, res) {
+	res.writeHead(200, { 'Content-Type': 'text/plain' });
+	res.end(kite());
+})
+
+app.get('/square_lattice', function (req, res) {
+	res.writeHead(200, { 'Content-Type': 'text/plain' });
+	res.end(square_lattice(6,6));
+})
+
+app.get('/triangle_lattice', function (req, res) {
+	res.writeHead(200, { 'Content-Type': 'text/plain' });
+	res.end(triangle_lattice(4, 4));
+})
+
+app.get('/', function (req, res) {
+	res.sendFile(__dirname + '/html/index.html');
 })
 
 app.get('/Task1.html', function (req, res) {

@@ -10,6 +10,7 @@
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
 </head>
 <body>
+    <a href="/">Go to the main page</a>
     <p>
         Algorithm 2: Write an algorithm that processes the output of Algorithm 1 in order to find
         the neighboring faces of any face. That is, faces that share an edge with the query face.
@@ -77,7 +78,7 @@
                 var context = canvas.getContext('2d');
                 context.clearRect(0, 0, canvas.scrollWidth, canvas.scrollHeight);
                 const colors = ['red', 'blue', 'green', 'yellow', 'purple',
-                    'black', 'orange', 'teal', 'grey', 'tomato', 'lime'];
+                    'orange', 'teal', 'grey', 'tomato', 'lime'];
 
                 let poly_graph = JSON.parse(poly_graph_json);
                 for (let vidx = 0; vidx < poly_graph.vertices.length; ++vidx) {

@@ -10,6 +10,7 @@
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
 </head>
 <body>
+    <a href="/">Go to the main page</a>
     <p>
         Algorithm 4: Implement an algorithm that, given a start face, computes the neighboring
         faces, and then the neighbors of the neighbor faces and so on. The system should find
@@ -76,7 +77,7 @@
                 var context = canvas.getContext('2d');
                 context.clearRect(0, 0, canvas.scrollWidth, canvas.scrollHeight);
                 const colors = ['red', 'blue', 'green', 'yellow', 'purple',
-                    'black', 'orange', 'teal', 'grey', 'tomato', 'lime'];
+                    'orange', 'teal', 'grey', 'tomato', 'lime'];
 
                 var dict = new Object();
                 for (let i = 0; i < data.length; ++i) {

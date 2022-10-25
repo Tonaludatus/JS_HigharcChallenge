@@ -33,6 +33,9 @@
   <ItemGroup>
     <Content Include="CircularList.js" />
     <Content Include="Graph.js" />
+    <Content Include="html\index.html">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="html\Task3.html" />
     <Content Include="html\Task4.html" />
     <Content Include="html\Task2.html" />

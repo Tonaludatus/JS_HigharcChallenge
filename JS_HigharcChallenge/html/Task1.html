@@ -10,6 +10,7 @@
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
 </head>
 <body>
+    <a href="/">Go to the main page</a>
     <p>
         This data structure is provided in the form of a collection of vertex positions and an edge set.
         Here’s an example that defines a 2x2 rectangle with a diagonal interior edge:
@@ -23,10 +24,29 @@
         data structure.
     </p>
     <p>
+        Further examples:
+    </p>
+    <p>
+        <a href="triangle_lattice">3-by-3 Triangle lattice</a>
+    </p>
+    <p>
+        4-by-4 Square lattice:
+        {"vertices":[[0,0],[1,0],[2,0],[3,0],[4,0],[0,1],[1,1],[2,1],[3,1],[4,1],[0,2],[1,2],[2,2],[3,2],[4,2],[0,3],[1,3],[2,3],[3,3],[4,3],[0,4],[1,4],[2,4],[3,4],[4,4]],"edges":[[1,0],[2,1],[3,2],[4,3],[5,0],[6,5],[6,1],[7,6],[7,2],[8,7],[8,3],[9,8],[9,4],[10,5],[11,10],[11,6],[12,11],[12,7],[13,12],[13,8],[14,13],[14,9],[15,10],[16,15],[16,11],[17,16],[17,12],[18,17],[18,13],[19,18],[19,14],[20,15],[21,20],[21,16],[22,21],[22,17],[23,22],[23,18],[24,23],[24,19]]}
+    </p>
+    <p>
+        <a href="square_lattice">5-by-5 Square lattice</a>
+    </p>
+    <p>
+        <a href="kite">"Kite" shape</a>
+    </p>
+    <p>
+        <a href="kite_with_ear">"Kite" shape with an "ear"</a>
+    </p>
+    <p>
         Interpretation of the result: the vertices are pairs of x and y coordinates. The edges are pairs
         of zero-base indices to the vertices array. The faces have a string for name, a boolean to signify if
         the polygon is an interior polygon (there <b>is ALWAYS one exterior polygon</b>, also in the array),
-        and an array for edges with the following semantics: if the edge of <b>one-based index</b> 'i' in the 
+        and an array for edges with the following semantics: if the edge of <b>one-based index</b> 'i' in the
         top level "edges" array aligns with the clockwise revolution around the polygon it is an edge of,
         then it will be added as 'i' to the polygon's edge array; otherwise it will be added as '-i'.
     </p>
@@ -74,8 +94,7 @@
                 $("#result").empty().append(result);
                 var context = canvas.getContext('2d');
                 context.clearRect(0, 0, canvas.scrollWidth, canvas.scrollHeight);
-                const colors = ['red', 'blue', 'green', 'yellow', 'purple',
-                    'black', 'orange', 'teal', 'grey', 'tomato', 'lime'];
+                const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'teal', 'grey', 'tomato', 'lime'];
 
                 for (let vidx = 0; vidx < data.vertices.length; ++vidx) {
                     let v = data.vertices[vidx];

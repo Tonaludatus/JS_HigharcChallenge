@@ -549,7 +549,7 @@ function exportPolyGraph(/*const PolyGraph&*/ poly_graph) {
         let geom_node = poly_graph.geom_graph.getGeomNode(i);
         pgx.vertices.push([geom_node.pos.x, geom_node.pos.y]);
     }
-    for (let i = 0; i < poly_graph.g.edges.length; ++i) {
+    for (let i = 0; i < poly_graph.geom_graph.numEdges(); ++i) {
         let geom_edge = poly_graph.geom_graph.getGeomEdge(i);
         pgx.edges.push([geom_edge.edge.start.key,
         geom_edge.edge.end.key]);
