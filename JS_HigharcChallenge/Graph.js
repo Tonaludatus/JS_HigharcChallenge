@@ -12,6 +12,11 @@ class pair {
 class Node {
     constructor(/*int*/ k) {
         this.key = k;
+        // The edges impinging on the node are stored in a circular list.
+        // This makes finding the counterclockwise-next edge from one edge
+        // on a GeomGraph (see below), and also to iterate through the
+        // edges of a Polygon (see below) in a continuous fashion if the
+        // graph is a PolyGraph (see below).
         this.edges = new clist.CList();
     }
 
@@ -42,6 +47,16 @@ class Edge {
     }
 }
 
+/* A generic graph representation that doesn't store ANY
+ * data that's beyond the graph connectivities.
+ * Helps in code reuse as well as memory footprint: data
+ * that is needed for a particular calculation can be stored
+ * elsewhere and thrown away when the calculation is done.
+ * 
+ * The Graph ensures that indices of edges and nodes are
+ * stable. That kind of forces that removing edges and nodes
+ * are NOT SUPPORTED
+ */
 class Graph {
     constructor() {
         /* Array of Edge objects */ this.edges = [];
@@ -85,7 +100,8 @@ class Graph {
     }
 }
 
-// Edges ordered by rotation from (1, 0)
+// Node specialization for a geometric graph node
+// Edges ordered by CCW rotation from (1, 0)
 class GeomNode {
     constructor(/* Node& */ n, /* Point */ p) {
         this.node = n;
@@ -93,6 +109,7 @@ class GeomNode {
     }
 };
 
+// Edge specialization fro geometric graph edges
 class GeomEdge {
     constructor(/*GeomGraph&*/ g, /*Edge&*/ e, /*GeomNode&*/ start, /*GeomNode&*/ end) {
         this.edge = e;
@@ -108,6 +125,9 @@ function outwardDirFrom(/*GeomEdge&*/ e, /*GeomNode&*/ n) {
     return e.dir.flipped();
 }
 
+/* Geometric Graph specialization. The graph nodes and
+ * edges are represented on a 2D plane.
+ */
 class GeomGraph {
     constructor() {
         this.g = new Graph();
@@ -183,6 +203,13 @@ class GeomGraph {
     }
 };
 
+/* Edge specialization for a polygon edge that associates a
+ * GeomEdge with at most two Polygons -- the left and right
+ * polygons to the edge.
+ * In this challenge the expectation is that every PolyEdge
+ * eventually associates two polygons -- i.e. every GeomEdge
+ * has Polygons on both its sides.
+ */
 class PolyEdge {
     // The left and right polygons with respect to geom_edge's direction
     // are the PolyEdge's edge's start and end nodes respectively.
@@ -192,7 +219,7 @@ class PolyEdge {
     }
 };
 
-
+/* A node of the dual graph of a GeomGraph */
 class Polygon {
     constructor(/*Node&*/ n, /*string*/ nm) {
         this.node = n;
@@ -201,6 +228,7 @@ class Polygon {
     }
 };
 
+/* classes used in exporting to/from JSON */
 class PolygonExport {
     constructor(/*string*/ nm, /*bool*/ is_interior, /*array of edge keys*/ edge_keys) {
         this.name = nm;
@@ -226,6 +254,9 @@ class PolyGraphExport {
     }
 };
 
+/* The dual graph of a GeomGraph
+ * Its nodes are Polygons and its edges PolyEdges.
+ */
 class PolyGraph {
     constructor(/*GeomGraph&*/ geom_graph, /*Graph&*/ graph, polys, poly_edges) {
         this.geom_graph = geom_graph;
@@ -278,6 +309,23 @@ function addGeometricRightPolyToPolyEdge(/*Polygon&*/ p, /*PolyEdge&*/ pe) {
     pe.edge.end = p.node;
 }
 
+/* returns pair<Point, Point> */
+function getLeftRevolutionDirectedSectionOfPolyEdge(
+    /*GeomGraph*/ gg, /*Polygon&*/ p, /*PolyEdge&*/ pe) {
+    let ge_start_gn = gg.getGeomNode(pe.geom_edge.edge.start.key);
+    let ge_end_gn = gg.getGeomNode(pe.geom_edge.edge.end.key);
+    if (pe.edge.start.equals(p.node)) {
+        return new pair(ge_start_gn.pos, ge_end_gn.pos); 
+    }
+    return new pair(ge_end_gn.pos, ge_start_gn.pos);
+}
+
+/* The algorithm to build the PolyGraph from a GeomGraph.
+ * Has a bunch of helper functions too.
+ * At the end the data that was needed only for the building
+ * of the PolyGraph can be thrown away together with
+ * the PolygonBuilder object.
+ */
 class PolygonBuilder {
     constructor(/*GeomGraph&*/ geom_graph) {
         this.geom_graph = geom_graph;
@@ -529,6 +577,33 @@ function exportPolyGraph(/*const PolyGraph&*/ poly_graph) {
     return pgx;
 }
 
+/* returns array of Polygons that contain the point */
+function containingPolygonsForPoint(/*PolyGraph*/pg, /*Point*/ pt) {
+    let ret = []
+    for (let i = 0; i < pg.polygons.length; ++i) {
+        let p = pg.polygons[i];
+        if (!isInteriorPoly(p)) continue;
+        let count_intersections_with_ray_cast = 0;
+        for (let it = p.node.edges.begin();
+            it.not_equals(p.node.edges.end());
+            it.increment()) {
+            let e = it.deref();
+            let pe = pg.getPolyEdge(e.key);
+            let lrds = getLeftRevolutionDirectedSectionOfPolyEdge(pg.geom_graph, p, pe);
+            if (vector.eqNormalized(pt, lrds.first) ||
+                vector.eqNormalized(pt, lrds.second)) {
+                // Force adding the polygon.
+                // See comment on vector.rayCastIntersectsSection
+                count_intersections_with_ray_cast = 1;
+                continue;
+            }
+            let ray_intersection = vector.rayCastIntersectsSection(pt, lrds.first, lrds.second);
+            count_intersections_with_ray_cast += ray_intersection;
+        }
+        if (count_intersections_with_ray_cast != 0) ret.push(p);
+    }
+    return ret;
+}
 
 module.exports = {
     outwardDirFrom,
@@ -545,5 +620,6 @@ module.exports = {
     importGeomGraphAndBuildPolyGraph,
     importPolyGraph,
     isInteriorPoly,
-    exportPolyGraph
+    exportPolyGraph,
+    containingPolygonsForPoint
 };

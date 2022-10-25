@@ -78,6 +78,10 @@ app.get('/Task2.html', function (req, res) {
 	res.sendFile(__dirname + '/html/Task2.html');
 })
 
+app.get('/Task3.html', function (req, res) {
+	res.sendFile(__dirname + '/html/Task3.html');
+})
+
 app.get('/Task4.html', function (req, res) {
 	res.sendFile(__dirname + '/html/Task4.html');
 })
@@ -124,6 +128,22 @@ app.post('/task2_data', function (req, res) {
 		ret = ret.filter((val, index, arr) => {
 			return arr.indexOf(val) == index;
 		});
+	} catch (exc) {
+		ret.error = exc;
+	}
+	res.json(ret);
+})
+
+app.post('/task3_data', function (req, res) {
+	let ret = { error: "Something went wrong" };
+	try {
+		let json = JSON.parse(req.body.poly_graph);
+		let ptx = Number(req.body.x);
+		let pty = Number(req.body.y);
+		let pg = graph.importPolyGraph(json);
+		let pt = new vector.Point(ptx, pty);
+		let containing_polys = graph.containingPolygonsForPoint(pg, pt);
+		ret = containing_polys.map((p) => { return p.name; });
 	} catch (exc) {
 		ret.error = exc;
 	}

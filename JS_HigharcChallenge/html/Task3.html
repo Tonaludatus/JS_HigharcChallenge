@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
-    <title>Higharc challenge Task 4</title>
+    <title>Higharc challenge Task 3</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -11,10 +11,8 @@
 </head>
 <body>
     <p>
-        Algorithm 4: Implement an algorithm that, given a start face, computes the neighboring
-        faces, and then the neighbors of the neighbor faces and so on. The system should find
-        “layers” of neighboring face sets. The output should be an array of arrays of face ids until
-        all faces have been visited.
+        Algorithm 3: Given a point and the output of <a href="Task1.html">Algorithm 1</a>, find the
+        face the point is contained within. Naturally, the point may not be inside of a face.
     </p>
     <p>
         Interpretation of the Polygon-Geometry dual graph JSON input: the vertices are pairs of x and y coordinates.
@@ -29,11 +27,13 @@
         Example inputs: <br />
         {"vertices":[[-38.2,0],[29.87,45.12],[60,15.8],[11.3,-23.09],[0,5],[-12,-49.784],[27,-35.55]],"edges":[[0,1],[1,2],[2,3],[3,0],[4,0],[4,1],[4,2],[4,3],[3,5],[6,3],[6,5]],"faces":[{"name":"A","is_interior_poly":true,"edges":[-4,-8,5]},{"name":"B","is_interior_poly":true,"edges":[6,-1,-5]},{"name":"C","is_interior_poly":true,"edges":[-3,-7,8]},{"name":"D","is_interior_poly":false,"edges":[1,2,3,-10,11,-9,4]},{"name":"E","is_interior_poly":true,"edges":[7,-2,-6]},{"name":"F","is_interior_poly":true,"edges":[-11,10,9]}]} <br />
     </p>
-    <form action="/task4_data" id="task4_json_entry">
+    <form action="/task3_data" id="task3_json_entry">
         <label for="poly_graph">Polygon-Geometry dual graph JSON:</label>
         <input type="text" name="poly_graph">
-        <label for="face">Starting Face:</label>
-        <input type="text" name="face">
+        <label for="x">X:</label>
+        <input type="text" name="x">
+        <label for="y">Y:</label>
+        <input type="text" name="y">
         <input type="submit" value="Send">
     </form>
     <div id="result"></div>
@@ -41,7 +41,7 @@
 
     <script>
         // Attach a submit handler to the form
-        $("#task4_json_entry").submit(function (event) {
+        $("#task3_json_entry").submit(function (event) {
 
             // Stop form from submitting normally
             event.preventDefault();
@@ -49,11 +49,12 @@
             // Get some values from elements on the page:
             var $form = $(this),
                 poly_graph_json = $form.find("input[name='poly_graph']").val(),
-                face = $form.find("input[name='face']").val(),
+                pt_x = $form.find("input[name='x']").val(),
+                pt_y = $form.find("input[name='y']").val(),
                 url = $form.attr("action");
 
             // Send the data using post
-            var posting = $.post(url, { poly_graph: poly_graph_json, face: face });
+            var posting = $.post(url, { poly_graph: poly_graph_json, x: pt_x, y: pt_y });
 
             var scale = 1.0;
             var minx = 1000000;
@@ -78,13 +79,6 @@
                 const colors = ['red', 'blue', 'green', 'yellow', 'purple',
                     'black', 'orange', 'teal', 'grey', 'tomato', 'lime'];
 
-                var dict = new Object();
-                for (let i = 0; i < data.length; ++i) {
-                    for (let j = 0; j < data[i].length; ++j) {
-                        dict[data[i][j]] = i;
-                    }
-                }
-
                 let poly_graph = JSON.parse(poly_graph_json);
                 for (let vidx = 0; vidx < poly_graph.vertices.length; ++vidx) {
                     let v = poly_graph.vertices[vidx];
@@ -94,6 +88,7 @@
                     if (v[1] > maxy) maxy = v[1];
                 }
                 scale = Math.max(maxx - minx, maxy - miny);
+                var color_idx = 0;
                 for (let pidx = 0; pidx < poly_graph.faces.length; ++pidx) {
                     var com = [0.0, 0.0]; // center of mass
                     let p = poly_graph.faces[pidx];
@@ -115,14 +110,22 @@
                         com[1] += toCanvasY(common_vertex[1]);
                     }
                     context.closePath();
-                    context.fillStyle = colors[dict[p.name] % colors.length];
-                    context.fill();
+                    if (data.includes(p.name)) {
+                        context.fillStyle = colors[color_idx++ % colors.length];
+                        context.fill();
+                    } else {
+                        context.fillStyle = 'black';
+                        context.stroke();
+                    }
                     com[0] /= p.edges.length;
                     com[1] /= p.edges.length;
                     context.font = '12px serif';
                     context.fillStyle = 'black';
                     context.fillText(p.name, com[0], com[1]);
                 }
+                // Draw the point as a small rectangle
+                context.fillRect(toCanvasX(Number(pt_x)) - 1, toCanvasY(Number(pt_y)) - 1, 3, 3);
+
             });
         });
     </script>

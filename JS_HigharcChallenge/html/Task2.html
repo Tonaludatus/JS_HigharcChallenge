@@ -18,13 +18,22 @@
         or string.
     </p>
     <p>
-        Example inputs: </br>
-        {"vertices":[[-38.2,0],[29.87,45.12],[60,15.8],[11.3,-23.09],[0,5],[-12,-49.784],[27,-35.55]],"edges":[[0,1],[1,2],[2,3],[3,0],[4,0],[4,1],[4,2],[4,3],[3,5],[6,3],[6,5]],"faces":[{"name":"A","is_interior_poly":true,"edges":[-4,-8,5]},{"name":"B","is_interior_poly":true,"edges":[6,-1,-5]},{"name":"C","is_interior_poly":true,"edges":[-3,-7,8]},{"name":"D","is_interior_poly":false,"edges":[1,2,3,-10,11,-9,4]},{"name":"E","is_interior_poly":true,"edges":[7,-2,-6]},{"name":"F","is_interior_poly":true,"edges":[-11,10,9]}]} </br>
+        Interpretation of the Polygon-Geometry dual graph JSON input: the vertices are pairs of x and y coordinates.
+        The edges are pairs
+        of zero-base indices to the vertices array. The faces have a string for name, a boolean to signify if
+        the polygon is an interior polygon (there <b>is ALWAYS one exterior polygon</b>, also in the array),
+        and an array for edges with the following semantics: if the edge of <b>one-based index</b> 'i' in the
+        top level "edges" array aligns with the clockwise revolution around the polygon it is an edge of,
+        then the sign will be positive; otherwise it will be negative.
+    </p>
+    <p>
+        Example inputs: <br />
+        {"vertices":[[-38.2,0],[29.87,45.12],[60,15.8],[11.3,-23.09],[0,5],[-12,-49.784],[27,-35.55]],"edges":[[0,1],[1,2],[2,3],[3,0],[4,0],[4,1],[4,2],[4,3],[3,5],[6,3],[6,5]],"faces":[{"name":"A","is_interior_poly":true,"edges":[-4,-8,5]},{"name":"B","is_interior_poly":true,"edges":[6,-1,-5]},{"name":"C","is_interior_poly":true,"edges":[-3,-7,8]},{"name":"D","is_interior_poly":false,"edges":[1,2,3,-10,11,-9,4]},{"name":"E","is_interior_poly":true,"edges":[7,-2,-6]},{"name":"F","is_interior_poly":true,"edges":[-11,10,9]}]} <br />
     </p>
     <form action="/task2_data" id="task2_json_entry">
         <label for="poly_graph">Polygon-Geometry dual graph JSON:</label>
         <input type="text" name="poly_graph">
-        <label for="poly_graph">Face:</label>
+        <label for="face">Face:</label>
         <input type="text" name="face">
         <input type="submit" value="Send">
     </form>
@@ -45,7 +54,7 @@
                 url = $form.attr("action");
 
             // Send the data using post
-            var posting = $.post(url, { poly_graph: poly_graph_json, face:face });
+            var posting = $.post(url, { poly_graph: poly_graph_json, face: face });
 
             var scale = 1.0;
             var minx = 1000000;
@@ -86,8 +95,8 @@
                     if (!p.is_interior_poly) continue;
                     context.beginPath();
                     for (let eidx = 0; eidx < p.edges.length; ++eidx) {
-                        let e = poly_graph.edges[Math.abs(p.edges[eidx])-1];
-                        let enext = poly_graph.edges[Math.abs(p.edges[(eidx + 1) % p.edges.length])-1];
+                        let e = poly_graph.edges[Math.abs(p.edges[eidx]) - 1];
+                        let enext = poly_graph.edges[Math.abs(p.edges[(eidx + 1) % p.edges.length]) - 1];
                         let common_vertex_idx = e.filter((a) => { return enext.indexOf(a) !== -1; });
                         let common_vertex = poly_graph.vertices[common_vertex_idx[0]];
                         if (eidx == 0) {

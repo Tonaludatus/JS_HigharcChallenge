@@ -22,6 +22,15 @@
         Algorithm 1: Write an algorithm that finds all of the interior faces (polygons) of such a
         data structure.
     </p>
+    <p>
+        Interpretation of the result: the vertices are pairs of x and y coordinates. The edges are pairs
+        of zero-base indices to the vertices array. The faces have a string for name, a boolean to signify if
+        the polygon is an interior polygon (there <b>is ALWAYS one exterior polygon</b>, also in the array),
+        and an array for edges with the following semantics: if the edge of <b>one-based index</b> 'i' in the 
+        top level "edges" array aligns with the clockwise revolution around the polygon it is an edge of,
+        then the sign will be positive; otherwise it will be negative.
+    </p>
+
     <form action="/task1_data" id="geom_graph_json_entry">
         <label for="poly_graph">Geometry graph JSON:</label>
         <input type="text" name="geom_graph">
@@ -83,8 +92,8 @@
                     if (!p.is_interior_poly) continue;
                     context.beginPath();
                     for (let eidx = 0; eidx < p.edges.length; ++eidx) {
-                        let e = data.edges[Math.abs(p.edges[eidx])-1];
-                        let enext = data.edges[Math.abs(p.edges[(eidx + 1) % p.edges.length])-1];
+                        let e = data.edges[Math.abs(p.edges[eidx]) - 1];
+                        let enext = data.edges[Math.abs(p.edges[(eidx + 1) % p.edges.length]) - 1];
                         let common_vertex_idx = e.filter((a) => { return enext.indexOf(a) !== -1; });
                         let common_vertex = data.vertices[common_vertex_idx[0]];
                         if (eidx == 0) {
